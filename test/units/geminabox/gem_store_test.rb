@@ -15,10 +15,12 @@ module Geminabox
     end
 
     def test_prepare_data_folders_with_data_as_unwriteable_folder
-      Geminabox.data = '/'
-      gem_store = GemStore.new(gem_file(:example))
-      assert_gem_store_error(500, 'is writable') do
-        gem_store.prepare_data_folders
+      File.stub(:writable?, false) do
+        Geminabox.data = '/'
+        gem_store = GemStore.new(gem_file(:example))
+        assert_gem_store_error(500, 'is writable') do
+          gem_store.prepare_data_folders
+        end
       end
     end
 
