@@ -11,7 +11,7 @@
     <% spec = spec_for(name, newest_gem.number, newest_gem.platform) %>
     <entry>
       <id><%= h(name) %></id>
-      <updated><%= spec.date.w3cdtf %></updated>
+      <updated><%= time_to_w3cdtf spec.date %></updated>
       <title><%= h(name) %> (<%= h(versions.size == 1 ? versions.oldest.number : "#{versions.oldest.number} - #{versions.newest.number}") %>)</title>
       <author><name><%= h(spec.authors.join(", ")) %></name></author>
       <% versions.each do |version| %>
@@ -22,7 +22,7 @@
 
   <updated>
     <% if newest_gem = @gems.newest %>
-      <%= spec_for(newest_gem.name, newest_gem.number, newest_gem.platform).date.w3cdtf %>
+      <%= time_to_w3cdtf spec_for(newest_gem.name, newest_gem.number, newest_gem.platform).date %>
     <% else %>
       <%= Date.today %>
     <% end %>

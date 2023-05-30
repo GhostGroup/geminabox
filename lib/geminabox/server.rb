@@ -339,6 +339,16 @@ HTML
         end if File.exist? spec_file
       end
 
+      def time_to_w3cdtf(time)
+        fraction_digits = if time.usec.zero?
+                            0
+                          else
+                            time.strftime('%6N').index(/0*\z/)
+                          end
+        time.iso8601(fraction_digits)
+      end
+
+
       def default_platform
         'ruby'
       end
