@@ -1,54 +1,79 @@
 require 'time'
 
 module Geminabox
-  module GemVersionsMerge
-    extend CompactIndexer::PathMethods
-    def self.datadir
+  class GemVersionsMerge
+    include CompactIndexer::PathMethods
+    attr_reader :local_gem_list, :remote_gem_list
+
+    def initialize(local_gem_list, remote_gem_list)
+      @local_gem_list = local_gem_list
+      @remote_gem_list = remote_gem_list
+    end
+
+    def call
+      return local_gem_list unless remote_gem_list
+
+      Server.dependency_cache.marshal_cache("gem_merged_versions/#{preamble_time}") do
+        combine_gems!(local_split)
+        combine_gems!(remote_split)
+
+        result = combined.flat_map do |name, digests|
+          digests.map do |digest, versions|
+            versions = versions.uniq.sort.join(',')
+            [name, versions, digest].compact.join(' ')
+          end
+        end
+        "#{(preamble + result.sort).join("\n")}\n"
+      end
+    end
+
+    private
+
+    def combined
+      @combined ||= Hash.new { |h, k| h[k] = {} }
+    end
+
+    def local_split
+      @local_split ||= local_gem_list&.split("\n") || []
+    end
+
+    def remote_split
+      @remote_split ||= remote_gem_list.split("\n") || []
+    end
+
+    def local_time
+      return Time.at(0) if local_split.empty?
+
+      @local_time ||= Time.parse(local_split[0].split[1])
+    end
+
+    # default to the begging of time if the remote time is not available
+    def remote_time
+      return Time.at(0) if remote_split.empty?
+
+      @remote_time ||= Time.parse(remote_split[0].split[1])
+    end
+
+    def preamble
+      (local_time > remote_time ? local_split : remote_split)[0..1]
+    end
+
+    def preamble_time
+      Time.parse(preamble[0].split[1])
+    end
+
+    def datadir
       Geminabox.data
     end
 
-    def self.merge(local_gem_list, remote_gem_list)
-      return local_gem_list unless remote_gem_list
-      merged_versions = try_load_cached_file
+    def combine_gems!(source)
+      return if source.empty?
 
-      local_split = local_gem_list.split("\n")
-      remote_split = remote_gem_list.split("\n")
-      merged_versions_split = merged_versions.split("\n")
-
-      local_time = Time.parse(local_split[0].split[1])
-      remote_time = Time.parse(remote_split[0].split[1])
-      preamble = (local_time > remote_time ? local_split : remote_split)[0..1]
-      unless merged_versions.empty?
-        merged_version_time = Time.parse(merged_versions_split[0].split[1])
-        preamble_time = Time.parse(preamble[0].split[1])
-        return merged_versions if merged_version_time >= preamble_time
-      end
-
-      combined = gems_hash(remote_split).merge(gems_hash(local_split))
-      result = "#{(preamble + combined.values.sort).join("\n")}\n"
-      write_merged_versions(result)
-      result
-    end
-
-    def self.write_merged_versions(file_content)
-      File.write(merged_versions_path, file_content)
-    end
-
-    def self.try_load_cached_file
-      File.exist?(merged_versions_path) && File.read(merged_versions_path) || ""
-    end
-
-    def self.gems_hash(source)
-      source[2..-1].each_with_object({}) do |line, hash|
-        line.chomp!
-        name, versions, digest = line.split
-        seen = hash[name]
-        if seen
-          seen_versions = seen.split[1]
-          hash[name] = "#{name} #{seen_versions},#{versions} #{digest}"
-        else
-          hash[name] = line
-        end
+      source[2..-1].each do |line, _hash|
+        name, versions, digest = line.chomp.split
+        versions = versions.split(',') + combined.dig(name, digest).to_a
+        combined[name] ||= {}
+        combined[name][digest] = versions
       end
     end
   end

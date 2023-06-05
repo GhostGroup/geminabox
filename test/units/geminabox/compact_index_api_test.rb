@@ -133,7 +133,8 @@ module Geminabox
     def test_local_info_takes_precedence_when_configured
       Geminabox.rubygems_proxy = true
       reindex
-
+      remote_info = "--\n1.0.0 |checksum:whatever\n"
+      @remote_api.expect(:fetch_info, [304, remote_info], ["b", nil])
       local_info = @api.info("b")
       assert_match(/---\n1.0.0 |checksum:\S{64}/, local_info)
     end
@@ -144,7 +145,7 @@ module Geminabox
 
       @remote_api.expect(:fetch_versions, [200, conflicting_remote_versions], [nil])
       versions = @api.versions
-      assert_match(/\Acreated_at:.+\n---\na 2.0.0 \S{32}\nb 1.0.0 \S{32}\nz 1.0.0 \S{32}\n\z/, versions)
+      assert_match(/\Acreated_at:.+\n---\na 2.0.0 \S{32}\nb 1.0.0 \S{32}\nz 1.0.0 \S{32}\nz 2.0.0 \S{32}\n\z/, versions)
       @remote_api.verify
     end
 
