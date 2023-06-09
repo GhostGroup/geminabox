@@ -155,8 +155,8 @@ module Geminabox
       }
       say title unless progressbar_options
 
-      fork_type = {in_processes: n}
-      fork_type = {in_threads: n} if RUBY_PLATFORM == 'x64-mingw32'
+      fork_type = { in_processes: n }
+      fork_type = { in_threads: n } if RUBY_PLATFORM == 'x64-mingw32'
 
       infos = Parallel.map(specs, progress: progressbar_options, **fork_type) do |name, versions|
         info = dependency_info(versions)
