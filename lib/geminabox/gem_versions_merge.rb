@@ -10,6 +10,10 @@ module Geminabox
       @remote_gem_list = remote_gem_list
     end
 
+    def self.merge(local_gem_list, remote_gem_list)
+      new(local_gem_list, remote_gem_list).call
+    end
+
     def call
       return local_gem_list unless remote_gem_list
 

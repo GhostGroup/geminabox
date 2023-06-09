@@ -34,7 +34,7 @@ module Geminabox
     def versions
       return local_versions unless Geminabox.rubygems_proxy
 
-      GemVersionsMerge.new(local_versions, remote_versions).call
+      GemVersionsMerge.merge(local_versions, remote_versions)
     end
 
     def info(name)
