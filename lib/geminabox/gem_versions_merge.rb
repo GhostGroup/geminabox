@@ -66,10 +66,6 @@ module Geminabox
       Time.parse(preamble[0].split[1])
     end
 
-    def datadir
-      Geminabox.data
-    end
-
     def combine_gems!(source)
       return if source.empty?
 
